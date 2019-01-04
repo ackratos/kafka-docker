@@ -5,11 +5,31 @@ services:
     ports:
       - "2181:2181"
   kafka:
-    build: .
+    image: kafka:test
     ports:
-      - "9092"
+      - "9092:9092"
+      - "7071:7071"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
+      KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OPTS: -javaagent:/usr/app/jmx_prometheus_javaagent.jar=7071:/usr/app/prom-jmx-agent-config.yml
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090/tcp
+    volumes:
+      - ./mount/prometheus:/etc/prometheus
+    links:
+      - kafka
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000/tcp
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    links:
+      - prometheus
+volumes:
+  grafana-storage:
